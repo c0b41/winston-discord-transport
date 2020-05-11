@@ -1,5 +1,5 @@
 import Transport, { TransportStreamOptions } from 'winston-transport';
-import request from 'superagent';
+import got from 'got';
 import os from 'os';
 
 /**
@@ -15,7 +15,7 @@ interface DiscordTransportOptions extends TransportStreamOptions {
 /**
  * Nextabit's Discord Transport for winston
  */
-export default class DiscordTransport extends Transport {
+class DiscordTransport extends Transport {
   /** Webhook obtained from Discord */
   private webhook: string;
 
@@ -58,22 +58,15 @@ export default class DiscordTransport extends Transport {
    */
   private initialize = () => {
     this.initialized = new Promise((resolve, reject) => {
-      const opts = {
-        url: this.webhook,
-        method: 'GET',
-        json: true
-      };
-      request
-        .get(opts.url)
-        .set('accept', 'json')
-        .then(response => {
-          this.id = response.body.id;
-          this.token = response.body.token;
-          resolve();
-        }).catch(err => {
-          console.error(`Could not connect to Discord Webhook at ${this.webhook}`);
-          reject(err);
-        });
+
+      got(this.webhook, { responseType: 'json'}).then((response: any) => {
+        this.id = response.body.id;
+        this.token = response.body.token;
+        resolve();
+      }).catch(err => {
+        console.error(`Could not connect to Discord Webhook at ${this.webhook}`);
+        reject(err);
+      });
     });
   }
 
@@ -139,19 +132,18 @@ export default class DiscordTransport extends Transport {
 
     const options = {
       url: this.getUrl(),
-      method: 'POST',
-      json: true,
       body: postBody
     };
 
     try {
-      // await request(options);
-      await request
-        .post(options.url)
-        .send(options.body)
-        .set('accept', 'json');
+      await got.post(options.url, {
+        json: options.body,
+        responseType: 'json'
+      });
     } catch (err) {
       console.error('Error sending to discord');
     }
   }
 }
+
+export = DiscordTransport;

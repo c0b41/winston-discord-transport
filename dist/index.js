@@ -11,9 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 const winston_transport_1 = __importDefault(require("winston-transport"));
-const superagent_1 = __importDefault(require("superagent"));
+const got_1 = __importDefault(require("got"));
 const os_1 = __importDefault(require("os"));
 /**
  * Nextabit's Discord Transport for winston
@@ -30,15 +29,7 @@ class DiscordTransport extends winston_transport_1.default {
          */
         this.initialize = () => {
             this.initialized = new Promise((resolve, reject) => {
-                const opts = {
-                    url: this.webhook,
-                    method: 'GET',
-                    json: true
-                };
-                superagent_1.default
-                    .get(opts.url)
-                    .set('accept', 'json')
-                    .then(response => {
+                got_1.default(this.webhook, { responseType: 'json' }).then((response) => {
                     this.id = response.body.id;
                     this.token = response.body.token;
                     resolve();
@@ -86,16 +77,13 @@ class DiscordTransport extends winston_transport_1.default {
             });
             const options = {
                 url: this.getUrl(),
-                method: 'POST',
-                json: true,
                 body: postBody
             };
             try {
-                // await request(options);
-                yield superagent_1.default
-                    .post(options.url)
-                    .send(options.body)
-                    .set('accept', 'json');
+                yield got_1.default.post(options.url, {
+                    json: options.body,
+                    responseType: 'json'
+                });
             }
             catch (err) {
                 console.error('Error sending to discord');
@@ -123,7 +111,6 @@ class DiscordTransport extends winston_transport_1.default {
         callback();
     }
 }
-exports.default = DiscordTransport;
 /** Available colors for discord messages */
 DiscordTransport.COLORS = {
     error: 14362664,
@@ -133,4 +120,5 @@ DiscordTransport.COLORS = {
     debug: 2196944,
     silly: 2210373,
 };
+module.exports = DiscordTransport;
 //# sourceMappingURL=index.js.map
